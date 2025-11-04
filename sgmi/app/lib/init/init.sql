@@ -1,0 +1,1 @@
+CREATE ROLE user LOGIN PASSWORD 'sgmi_password_3337';
