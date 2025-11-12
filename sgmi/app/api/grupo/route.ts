@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GrupoController } from '@/app/lib/controllers/grupo';
 import { createGrupoSchema } from '@/app/lib/schemas/grupo';
+import { getAuth } from '@/app/lib/requestAuth';
 
 /**
  * GET /api/grupo
@@ -25,7 +26,8 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const role = (request.headers.get('x-user-role') || 'user').toString();
+  const auth = getAuth(request);
+  const role = auth?.role ?? 'user';
 
     // validar body con Zod
     const body = await request.json();
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const { nombre, descripcion, facultad_id } = body;
 
-    const response = await GrupoController.create(nombre, role, descripcion, facultad_id);
+  const response = await GrupoController.create(nombre, role, descripcion, facultad_id);
 
     return NextResponse.json(response, { status: response.success ? 201 : response.error === 'No autorizado' ? 403 : 400 });
   } catch (error: any) {

@@ -1,0 +1,82 @@
+import pool from '../db';
+
+export interface IInvestigacion {
+  id?: number;
+  tipo: string;
+  codigo?: string;
+  fecha_inicio: string; // ISO date
+  fecha_fin?: string | null;
+  nombre: string;
+  descripcion?: string;
+  fuente_financiamiento?: string;
+  grupo_id: number;
+  fecha_creacion?: Date;
+}
+
+export class InvestigacionModel {
+  static async create(data: IInvestigacion): Promise<IInvestigacion> {
+    const query = `
+      INSERT INTO investigaciones (tipo, codigo, fecha_inicio, fecha_fin, nombre, descripcion, fuente_financiamiento, grupo_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [
+      data.tipo,
+      data.codigo || null,
+      data.fecha_inicio,
+      data.fecha_fin || null,
+      data.nombre,
+      data.descripcion || null,
+      data.fuente_financiamiento || null,
+      data.grupo_id
+    ]);
+
+    return result.rows[0];
+  }
+
+  static async findAll(grupoId?: number): Promise<IInvestigacion[]> {
+    let q = 'SELECT * FROM investigaciones';
+    const params: any[] = [];
+    if (grupoId) {
+      q += ' WHERE grupo_id = $1';
+      params.push(grupoId);
+    }
+    q += ' ORDER BY fecha_creacion DESC';
+    const result = await pool.query(q, params);
+    return result.rows;
+  }
+
+  static async findById(id: number): Promise<IInvestigacion | null> {
+    const q = 'SELECT * FROM investigaciones WHERE id = $1';
+    const r = await pool.query(q, [id]);
+    return r.rows.length ? r.rows[0] : null;
+  }
+
+  static async update(id: number, data: Partial<IInvestigacion>): Promise<IInvestigacion | null> {
+    const updates: string[] = [];
+    const params: any[] = [];
+    let idx = 1;
+
+    if (data.tipo !== undefined) { updates.push(`tipo = $${idx++}`); params.push(data.tipo); }
+    if (data.codigo !== undefined) { updates.push(`codigo = $${idx++}`); params.push(data.codigo); }
+    if (data.fecha_inicio !== undefined) { updates.push(`fecha_inicio = $${idx++}`); params.push(data.fecha_inicio); }
+    if (data.fecha_fin !== undefined) { updates.push(`fecha_fin = $${idx++}`); params.push(data.fecha_fin); }
+    if (data.nombre !== undefined) { updates.push(`nombre = $${idx++}`); params.push(data.nombre); }
+    if (data.descripcion !== undefined) { updates.push(`descripcion = $${idx++}`); params.push(data.descripcion); }
+    if (data.fuente_financiamiento !== undefined) { updates.push(`fuente_financiamiento = $${idx++}`); params.push(data.fuente_financiamiento); }
+    if (data.grupo_id !== undefined) { updates.push(`grupo_id = $${idx++}`); params.push(data.grupo_id); }
+
+    if (!updates.length) return null;
+    params.push(id);
+    const q = `UPDATE investigaciones SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`;
+    const r = await pool.query(q, params);
+    return r.rows.length ? r.rows[0] : null;
+  }
+
+  static async delete(id: number): Promise<boolean> {
+    const q = 'DELETE FROM investigaciones WHERE id = $1 RETURNING id';
+    const r = await pool.query(q, [id]);
+    return r.rows.length > 0;
+  }
+}

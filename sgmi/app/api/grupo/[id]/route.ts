@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GrupoController } from '@/app/lib/controllers/grupo';
 import { updateGrupoSchema } from '@/app/lib/schemas/grupo';
+import { getAuth } from '@/app/lib/requestAuth';
 
 /*
  * GET /api/grupo/[id]
@@ -11,8 +12,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const role = (request.headers.get('x-user-role') || 'user').toString();
+  const { id } = await params;
+  const auth = getAuth(request);
+  const role = auth?.role ?? 'user';
 
     const response = await GrupoController.getById(parseInt(id));
 
@@ -34,8 +36,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const role = (request.headers.get('x-user-role') || 'user').toString();
+  const { id } = await params;
+  const auth = getAuth(request);
+  const role = auth?.role ?? 'user';
 
     const body = await request.json();
     try {
@@ -67,8 +70,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const role = (request.headers.get('x-user-role') || 'user').toString();
+  const { id } = await params;
+  const auth = getAuth(request);
+  const role = auth?.role ?? 'user';
 
     const response = await GrupoController.delete(parseInt(id), role);
 
