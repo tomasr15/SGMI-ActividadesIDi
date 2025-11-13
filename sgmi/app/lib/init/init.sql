@@ -1,7 +1,21 @@
--- Simplified initialization script for SGMI (only required tables)
--- Covers: Usuarios (login/roles), Grupos, Memoria anual, Investigaciones, Trabajos en Congresos
+-- SGMI Database Initialization Script
+-- Includes schema creation and test data for development
 
-CREATE ROLE IF NOT EXISTS "sgmi_user" LOGIN PASSWORD 'sgmi_password_3337';
+-----------------------------------------------------------------
+-- Create role (safe version, no syntax error)
+-----------------------------------------------------------------
+DO
+$$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'sgmi_user') THEN
+        CREATE ROLE sgmi_user LOGIN PASSWORD 'sgmi_password_3337';
+    END IF;
+END
+$$;
+
+-----------------------------------------------------------------
+-- SCHEMA CREATION
+-----------------------------------------------------------------
 
 -- Usuarios: login y roles (admin / user)
 CREATE TABLE IF NOT EXISTS usuarios (
@@ -100,6 +114,62 @@ CREATE INDEX IF NOT EXISTS idx_investigaciones_grupo_id ON investigaciones(grupo
 CREATE INDEX IF NOT EXISTS idx_memorias_grupo_anio ON memorias(grupo_id, anio);
 CREATE INDEX IF NOT EXISTS idx_trabajos_grupo_id ON trabajos_congresos(grupo_id);
 
--- Notes: ON DELETE CASCADE is used where deleting a grupo should remove memos, investigaciones y trabajos.
--- Deleting a user does not delete content; creado_por in memorias is SET NULL to preserve historical data.
+-----------------------------------------------------------------
+-- 🔽 DATA SEED SECTION: Datos de prueba iniciales
+-----------------------------------------------------------------
 
+-- Facultades
+INSERT INTO facultades (nombre) VALUES 
+('Facultad de Ingeniería'),
+('Facultad de Ciencias'),
+('Facultad de Humanidades');
+
+-- Usuarios (uno admin y dos usuarios normales)
+INSERT INTO usuarios (nombre, email, password, role) VALUES
+('Administrador SGMI', 'admin@sgmi.local', 'admin123', 'admin'),
+('María Gómez', 'maria@sgmi.local', 'user123', 'user'),
+('Juan Pérez', 'juan@sgmi.local', 'user123', 'user');
+
+-- Grupos de investigación (3 ejemplos)
+INSERT INTO grupos (nombre, descripcion, facultad_id) VALUES
+('Grupo de Energías Renovables', 'Investigación en energía solar, eólica y geotérmica.', 1),
+('Grupo de Biotecnología Aplicada', 'Estudio de microorganismos para aplicaciones industriales y médicas.', 2),
+('Grupo de Estudios Sociales y Culturales', 'Análisis interdisciplinario de fenómenos sociales contemporáneos.', 3);
+
+-- Personal
+INSERT INTO personal (nombre, apellido, afiliacion, email) VALUES
+('Laura', 'Martínez', 'Facultad de Ingeniería', 'laura.martinez@sgmi.local'),
+('Carlos', 'Díaz', 'Facultad de Ciencias', 'carlos.diaz@sgmi.local'),
+('Sofía', 'Ramírez', 'Facultad de Humanidades', 'sofia.ramirez@sgmi.local');
+
+-- Investigaciones
+INSERT INTO investigaciones (tipo, codigo, fecha_inicio, fecha_fin, nombre, descripcion, fuente_financiamiento, grupo_id)
+VALUES
+('Proyecto', 'ENR-2025-001', '2025-01-15', NULL, 'Desarrollo de paneles solares de alta eficiencia', 'Investigación aplicada sobre nuevos materiales.', 'Ministerio de Ciencia', 1),
+('Proyecto', 'BIO-2025-002', '2025-03-10', NULL, 'Producción sostenible de enzimas industriales', 'Proyecto colaborativo con el sector privado.', 'Fondo Nacional de Innovación', 2);
+
+-- Participantes en investigaciones
+INSERT INTO investigacion_participantes (investigacion_id, personal_id, rol)
+VALUES
+(1, 1, 'Investigadora Principal'),
+(2, 2, 'Investigador Asociado'),
+(2, 3, 'Colaboradora');
+
+-- Memorias anuales (una por grupo)
+INSERT INTO memorias (grupo_id, anio, contenido, creado_por)
+VALUES
+(1, 2024, 'Resumen de actividades y publicaciones del año 2024.', 1),
+(2, 2024, 'Reporte anual de investigaciones en biotecnología.', 1),
+(3, 2024, 'Informe de extensión cultural y social.', 1);
+
+-- Reuniones
+INSERT INTO reuniones (tipo, nombre, ciudad, fecha_inicio, fecha_fin)
+VALUES
+('NACIONAL', 'Congreso Argentino de Energías Renovables', 'Buenos Aires', '2025-06-12', '2025-06-15'),
+('INTERNACIONAL', 'Simposio Latinoamericano de Biotecnología', 'Montevideo', '2025-08-20', '2025-08-23');
+
+-- Trabajos presentados
+INSERT INTO trabajos_congresos (titulo, resumen, expositor_id, reunion_id, grupo_id, fecha_presentacion)
+VALUES
+('Optimización de paneles solares híbridos', 'Estudio comparativo entre materiales de nueva generación.', 1, 1, 1, '2025-06-13'),
+('Avances en biocatálisis industrial', 'Resultados preliminares de enzimas aplicadas en síntesis química.', 2, 2, 2, '2025-08-21');
